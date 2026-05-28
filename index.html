@@ -409,42 +409,42 @@ function buildForm(){
   <div class="form-row">
     <div class="fg">
       <label>Adultes payants *</label>
-      <input type="number" min="0" value="${esc(form.adults)}" oninput="form.adults=this.value;render()" placeholder="0"/>
+      <input type="number" min="0" value="${esc(form.adults)}" oninput="form.adults=this.value;updateFormCalc()" placeholder="0"/>
     </div>
     <div class="fg">
       <label>Accompagnants (chaise uniquement)</label>
-      <input type="number" min="0" value="${esc(form.accomp)}" oninput="form.accomp=this.value;render()" placeholder="0"/>
+      <input type="number" min="0" value="${esc(form.accomp)}" oninput="form.accomp=this.value;updateFormCalc()" placeholder="0"/>
     </div>
   </div>
-  ${adults>0?`<div class="alert warn" style="font-size:12px;margin-bottom:8px">👉 ${adults} adulte(s) → saisir exactement <strong>${adults}</strong> repas au total</div>`:''}
+  ${adults>0?`<div id="adults-reminder" class="alert warn" style="font-size:12px;margin-bottom:8px">👉 ${adults} adulte(s) → saisir exactement <strong>${adults}</strong> repas au total</div>`:`<div id="adults-reminder" class="alert warn" style="display:none;font-size:12px;margin-bottom:8px"></div>`}
   <div class="repas-grid">
-    <div class="repas-card${(parseInt(form.bk)||0)>0?' active':''}">
+    <div id="repas-card-bk" class="repas-card${(parseInt(form.bk)||0)>0?' active':''}">
       <label>Baeckeoffe</label>
-      <input type="number" min="0" value="${esc(form.bk)}" oninput="form.bk=this.value;render()" placeholder="0"/>
+      <input type="number" min="0" value="${esc(form.bk)}" oninput="form.bk=this.value;updateFormCalc()" placeholder="0"/>
       <div class="repas-sub">30 € / pers.</div>
     </div>
-    <div class="repas-card${(parseInt(form.esc)||0)>0?' active':''}">
+    <div id="repas-card-esc" class="repas-card${(parseInt(form.esc)||0)>0?' active':''}">
       <label>Escalope</label>
-      <input type="number" min="0" value="${esc(form.esc)}" oninput="form.esc=this.value;render()" placeholder="0"/>
+      <input type="number" min="0" value="${esc(form.esc)}" oninput="form.esc=this.value;updateFormCalc()" placeholder="0"/>
       <div class="repas-sub">30 € / pers.</div>
     </div>
-    <div class="repas-card${(parseInt(form.ass)||0)>0?' active':''}">
+    <div id="repas-card-ass" class="repas-card${(parseInt(form.ass)||0)>0?' active':''}">
       <label>Assiette</label>
-      <input type="number" min="0" value="${esc(form.ass)}" oninput="form.ass=this.value;render()" placeholder="0"/>
+      <input type="number" min="0" value="${esc(form.ass)}" oninput="form.ass=this.value;updateFormCalc()" placeholder="0"/>
       <div class="repas-sub">15 € / pers.</div>
     </div>
   </div>
 
-  ${adults>0?`<div class="repas-check ${repasOk?'ok':'err'}">
+  ${adults>0?`<div id="repas-check-box" class="repas-check ${repasOk?'ok':'err'}">
     ${repasOk?`✓ ${totalRepas} repas = ${adults} adulte(s) — OK`:`⚠ ${totalRepas} repas pour ${adults} adulte(s) — ${adults-totalRepas>0?`il manque ${adults-totalRepas} repas`:`${totalRepas-adults} repas en trop`}`}
   </div>`:''}
 
-  ${du>0?`<div class="total-box">
+  <div id="total-box" class="total-box" style="${du>0?'':`display:none`}">
     <div>
       <div class="total-label">Total à payer</div>
-      <div style="font-size:11px;color:#666;margin-top:2px">${parseInt(form.bk)||0} × Baeckeoffe 30€ + ${parseInt(form.esc)||0} × Escalope 30€ + ${parseInt(form.ass)||0} × Assiette 15€</div>
+      <div id="total-detail" style="font-size:11px;color:#666;margin-top:2px">${parseInt(form.bk)||0} × Baeckeoffe 30€ + ${parseInt(form.esc)||0} × Escalope 30€ + ${parseInt(form.ass)||0} × Assiette 15€</div>
     </div>
-    <div class="total-amount">${du} €</div>
+    <div class="total-amount" id="total-amount">${du} €</div>
   </div>`:''}
 
   <div class="sec-title">Paiements</div>
@@ -468,7 +468,7 @@ function buildPaiementsEditor(du,pa,reste){
   const rows=form.pays.map((p,i)=>`
     <div class="pay-row">
       <select onchange="form.pays[${i}].type=this.value">${PAY_TYPES.map(t=>`<option value="${t.v}"${p.type===t.v?' selected':''}>${t.l}</option>`).join('')}</select>
-      <input type="number" min="0" step="0.5" value="${esc(p.mt)}" oninput="form.pays[${i}].mt=this.value;render()" placeholder="0.00 €"/>
+      <input type="number" min="0" step="0.5" value="${esc(p.mt)}" oninput="form.pays[${i}].mt=this.value;updateFormCalc()" placeholder="0.00 €"/>
       <input type="text" value="${esc(p.ref)}" oninput="form.pays[${i}].ref=this.value" placeholder="${p.type==='cheque'?'N° chèque':'Référence...'}"/>
       <button class="pay-del" onclick="removePay(${i})" ${form.pays.length<=1?'disabled':''}>×</button>
     </div>`).join('');
@@ -485,8 +485,8 @@ function buildPaiementsEditor(du,pa,reste){
     <div class="pay-summary">
       <button class="btn sm" onclick="addPay()">+ Ajouter paiement</button>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span>Total encaissé : <strong>${pa} €</strong>${du>0?` / ${du} €`:''}</span>
-        ${statusHtml}
+        <span id="pay-total-text">Total encaissé : <strong>${pa} €</strong>${du>0?` / ${du} €`:''}</span>
+        <span id="pay-summary-status">${statusHtml}</span>
       </div>
     </div>
   </div>`;
@@ -848,6 +848,67 @@ function setupLocal(){
   API_KEY='LOCAL';localStorage.setItem('bk25_api_key','LOCAL');
   document.getElementById('setup-overlay').style.display='none';
   render();
+}
+
+
+// ===================== PARTIAL FORM UPDATE (no re-render) =====================
+function updateFormCalc(){
+  const adults = parseInt(form.adults)||0;
+  const totalRepas = (parseInt(form.bk)||0)+(parseInt(form.esc)||0)+(parseInt(form.ass)||0);
+  const du = (parseInt(form.bk)||0)*30+(parseInt(form.esc)||0)*30+(parseInt(form.ass)||0)*15;
+  const pa = Math.round((form.pays.reduce((s,p)=>s+(parseFloat(p.mt)||0),0))*100)/100;
+  const reste = Math.round((du-pa)*100)/100;
+
+  // Update repas check
+  const checkEl = document.getElementById('repas-check-box');
+  if(checkEl){
+    if(adults===0){ checkEl.style.display='none'; }
+    else {
+      checkEl.style.display='flex';
+      const ok = totalRepas===adults;
+      checkEl.className = 'repas-check '+(ok?'ok':'err');
+      checkEl.innerHTML = ok
+        ? '✓ '+totalRepas+' repas = '+adults+' adulte(s) — OK'
+        : '⚠ '+totalRepas+' repas pour '+adults+' adulte(s) — '+(adults-totalRepas>0?'il manque '+(adults-totalRepas)+' repas':(totalRepas-adults)+' repas en trop');
+    }
+  }
+
+  // Update adults reminder
+  const remEl = document.getElementById('adults-reminder');
+  if(remEl){
+    if(adults>0){ remEl.style.display='flex'; remEl.innerHTML='👉 '+adults+' adulte(s) → saisir exactement <strong style=\'margin:0 3px\'>'+adults+'</strong> repas au total'; }
+    else remEl.style.display='none';
+  }
+
+  // Update total box
+  const totEl = document.getElementById('total-box');
+  if(totEl){
+    if(du>0){
+      totEl.style.display='flex';
+      document.getElementById('total-amount').textContent = du+' €';
+      document.getElementById('total-detail').textContent =
+        (parseInt(form.bk)||0)+' × Baeckeoffe 30€ + '+(parseInt(form.esc)||0)+' × Escalope 30€ + '+(parseInt(form.ass)||0)+' × Assiette 15€';
+    } else totEl.style.display='none';
+  }
+
+  // Update payment summary
+  const payEl = document.getElementById('pay-summary-status');
+  if(payEl && du>0){
+    const totPayEl = document.getElementById('pay-total-text');
+    if(totPayEl) totPayEl.innerHTML = 'Total encaissé : <strong>'+pa+' €</strong> / '+du+' €';
+    if(Math.abs(reste)<0.01) payEl.innerHTML='<span style="color:#3B6D11;font-weight:700">✓ Complet</span>';
+    else if(reste>0) payEl.innerHTML='<span style="color:#854F0B;font-weight:700">Reste : '+reste+' €</span>';
+    else payEl.innerHTML='<span style="color:#A32D2D;font-weight:700">Trop-perçu : '+Math.abs(reste)+' €</span>';
+  }
+
+  // Update repas card active states
+  ['bk','esc','ass'].forEach(k=>{
+    const card = document.getElementById('repas-card-'+k);
+    if(card){
+      const val = parseInt(form[k])||0;
+      card.className = 'repas-card'+(val>0?' active':'');
+    }
+  });
 }
 
 // ===================== INIT =====================
